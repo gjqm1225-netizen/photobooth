@@ -36,7 +36,7 @@
     .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ccc; cursor: pointer; }
 
     /* 4단계: 꾸미기 & 프레임 미리보기 */
-    .canvas-container { margin: 15px auto; max-width: 300px; }
+    .canvas-container { margin: 15px auto; max-width: 360px; }
     canvas { width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: crosshair; }
     .tools { margin-top: 10px; display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
     
@@ -88,6 +88,7 @@
     </div>
     <div class="tools">
       <label>펜 색상: <input type="color" id="brushColor" value="#ff0000" onclick="selectSticker('')"></label>
+      <label>하단 문구: <input type="text" id="brandTextInput" value="퍼즐네컷" oninput="renderFinalCanvas()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; width: 110px;"></label>
       <button onclick="clearDrawings()" style="padding: 6px 12px; font-size: 14px; margin-top: 0;">꾸미기 초기화</button>
     </div>
     <div class="sticker-options">
@@ -260,22 +261,27 @@
     });
   }
 
+  // 4x6 사이즈에 똑같은 네컷 프레임 2개를 좌우로 배치하는 랜더링 로직
   function renderFinalCanvas() {
     ctx.fillStyle = currentFrameColor;
     ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-    const padding = 60;
-    const photoWidth = 1080;
-    const photoHeight = 360;
-    const gap = 30;
+    const photoWidth = 530;
+    const photoHeight = 330;
+    const gap = 20;
+    const startY = 50;
 
     let loadedCount = 0;
     selectedPhotos.forEach((photoIdx, i) => {
       const img = new Image();
       img.src = capturedPhotos[photoIdx];
       img.onload = () => {
-        const yPos = padding + i * (photoHeight + gap);
-        ctx.drawImage(img, 0, 0, img.width, img.height, padding, yPos, photoWidth, photoHeight);
+        const yPos = startY + i * (photoHeight + gap);
+        
+        // 왼쪽 프레임 사진 배치
+        ctx.drawImage(img, 0, 0, img.width, img.height, 35, yPos, photoWidth, photoHeight);
+        // 오른쪽 프레임 사진 배치 (동일한 4컷 사진)
+        ctx.drawImage(img, 0, 0, img.width, img.height, 635, yPos, photoWidth, photoHeight);
         
         loadedCount++;
         if (loadedCount === 4) {
@@ -287,15 +293,21 @@
   }
 
   function drawBrandText() {
+    const brandText = document.getElementById('brandTextInput').value || '퍼즐네컷';
     ctx.fillStyle = currentFrameColor === '#000000' ? '#ffffff' : '#000000';
-    ctx.font = 'bold 36px sans-serif';
+    ctx.font = 'bold 38px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('LIFE FOUR CUTS', finalCanvas.width / 2, 1700);
 
+    // 왼쪽 / 오른쪽 각각 문구 배치
+    ctx.fillText(brandText, 300, 1600);
+    ctx.fillText(brandText, 900, 1600);
+
+    // 날짜 자동 기록
     const today = new Date();
     const dateString = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}`;
-    ctx.font = '24px sans-serif';
-    ctx.fillText(dateString, finalCanvas.width / 2, 1750);
+    ctx.font = '22px sans-serif';
+    ctx.fillText(dateString, 300, 1660);
+    ctx.fillText(dateString, 900, 1660);
   }
 
   let isDrawingLine = false;
@@ -311,8 +323,6 @@
 
     if (currentSticker !== '') {
       stickers.push({ text: currentSticker, x: lastX, y: lastY });
-      
-      // 스티커 도장 찍을 때 캔버스 전체를 지우고 새로고침 하던 현상을 수정
       ctx.font = '80px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -373,7 +383,7 @@
 
   function downloadImage() {
     const link = document.createElement('a');
-    link.download = `lifecut_4x6_${Date.now()}.png`;
+    link.download = `puzzlecut_4x6_${Date.now()}.png`;
     link.href = finalCanvas.toDataURL('image/png', 1.0);
     link.click();
   }
