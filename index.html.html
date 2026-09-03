@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인생네컷 포토부스</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Pretendard', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .container { background: #fff; width: 100%; max-width: 800px; padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
+    .step { display: none; }
+    .step.active { display: block; }
+    
+    h2 { margin-bottom: 16px; color: #333; }
+    button { background: #ff4757; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; margin-top: 15px; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    button:hover:not(:disabled) { background: #ff6b81; }
+
+    /* 1단계: 촬영 */
+    .camera-box { position: relative; width: 100%; max-width: 720px; aspect-ratio: 6 / 4; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #000; }
+    video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+    
+    .countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; color: white; font-weight: bold; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    .thumb-preview { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
+    .thumb-preview img { width: 60px; height: 45px; object-fit: cover; border-radius: 4px; border: 2px solid #ddd; }
+
+    /* 2단계: 선택 */
+    .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+    .photo-item { position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; border: 3px solid transparent; }
+    .photo-item.selected { border-color: #ff4757; }
+    .photo-item img { width: 100%; height: auto; display: block; }
+    .photo-item .badge { position: absolute; top: 6px; right: 6px; background: #ff4757; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+
+    /* 3단계: 프레임 선택 */
+    .color-options { display: flex; gap: 12px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
+    .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ccc; cursor: pointer; }
+
+    /* 4단계: 꾸미기 & 프레임 미리보기 */
+    .canvas-container { margin: 15px auto; max-width: 300px; }
+    canvas { width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: crosshair; }
+    .tools { margin-top: 10px; display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+    
+    .sticker-options { display: flex; gap: 10px; justify-content: center; margin-top: 10px; font-size: 24px; }
+    .sticker-btn { cursor: pointer; padding: 4px; border: 2px solid transparent; border-radius: 4px; transition: 0.2s; }
+    .sticker-btn.active { border-color: #ff4757; background: #ffeaa7; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div id="step-1" class="step active">
+    <h2>📸 사진 촬영 (총 6장)</h2>
+    <div class="camera-box">
+      <video id="webcam" autoplay playsinline></video>
+      <div id="countdown" class="countdown"></div>
+    </div>
+    <div class="thumb-preview" id="thumbPreview"></div>
+    <button id="startBtn" onclick="startShooting()">촬영 시작 (5초 카운트다운)</button>
+  </div>
+
+  <div id="step-2" class="step">
+    <h2>4장의 사진을 선택해주세요 (<span id="selectCount">0</span>/4)</h2>
+    <div class="photo-grid" id="photoGrid"></div>
+    <button id="nextToFrameBtn" disabled onclick="goToStep(3)">프레임 선택하기</button>
+  </div>
+
+  <div id="step-3" class="step">
+    <h2>🎨 프레임 색상 선택</h2>
+    <div class="color-options">
+      <div class="color-btn" style="background: #ffffff;" onclick="selectFrameColor('#ffffff')"></div>
+      <div class="color-btn" style="background: #000000;" onclick="selectFrameColor('#000000')"></div>
+      <div class="color-btn" style="background: #ffb6c1;" onclick="selectFrameColor('#ffb6c1')"></div>
+      <div class="color-btn" style="background: #a0c4ff;" onclick="selectFrameColor('#a0c4ff')"></div>
+      <div class="color-btn" style="background: #caffbf;" onclick="selectFrameColor('#caffbf')"></div>
+      <div class="color-btn" style="background: #ffd6a5;" onclick="selectFrameColor('#ffd6a5')"></div>
+      <div class="color-btn" style="background: #bdb2ff;" onclick="selectFrameColor('#bdb2ff')"></div>
+      <div class="color-btn" style="background: #fffffc;" onclick="selectFrameColor('#fffffc')"></div>
+      <div class="color-btn" style="background: #ffc6ff;" onclick="selectFrameColor('#ffc6ff')"></div>
+      <div class="color-btn" style="background: #81b29a;" onclick="selectFrameColor('#81b29a')"></div>
+    </div>
+    <button onclick="goToStep(4)">꾸미기로 이동</button>
+  </div>
+
+  <div id="step-4" class="step">
+    <h2>✏️ 사진 꾸미기</h2>
+    <div class="canvas-container">
+      <canvas id="finalCanvas" width="1200" height="1800"></canvas>
+    </div>
+    <div class="tools">
+      <label>펜 색상: <input type="color" id="brushColor" value="#ff0000" onclick="selectSticker('')"></label>
+      <button onclick="clearDrawings()" style="padding: 6px 12px; font-size: 14px; margin-top: 0;">꾸미기 초기화</button>
+    </div>
+    <div class="sticker-options">
+      <span class="sticker-btn" onclick="selectSticker('⭐')">⭐</span>
+      <span class="sticker-btn" onclick="selectSticker('❤️')">❤️</span>
+      <span class="sticker-btn" onclick="selectSticker('😎')">😎</span>
+      <span class="sticker-btn" onclick="selectSticker('🌸')">🌸</span>
+      <span class="sticker-btn" onclick="selectSticker('🎀')">🎀</span>
+      <span class="sticker-btn" onclick="selectSticker('✨')">✨</span>
+    </div>
+    <p style="font-size: 12px; color: #666; margin-top: 8px;">* 스티커를 선택하고 사진을 클릭하면 도장이 찍힙니다.</p>
+    
+    <button onclick="downloadImage()">🖼️ 4x6 사이즈로 저장</button>
+  </div>
+</div>
+
+<script>
+  let videoStream = null;
+  let capturedPhotos = [];
+  let selectedPhotos = [];
+  let currentFrameColor = '#ffffff';
+  let isDrawing = false;
+  let drawings = [];
+  
+  let currentSticker = '';
+  let stickers = []; 
+
+  const video = document.getElementById('webcam');
+  const finalCanvas = document.getElementById('finalCanvas');
+  const ctx = finalCanvas.getContext('2d');
+
+  async function initCamera() {
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
+      video.srcObject = videoStream;
+    } catch (err) {
+      alert("카메라에 접근할 수 없습니다: " + err.message);
+    }
+  }
+  initCamera();
+
+  function goToStep(stepNum) {
+    document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+    document.getElementById(`step-${stepNum}`).classList.add('active');
+    if (stepNum === 4) {
+      renderFinalCanvas();
+    }
+  }
+
+  async function startShooting() {
+    document.getElementById('startBtn').disabled = true;
+    capturedPhotos = [];
+    document.getElementById('thumbPreview').innerHTML = '';
+
+    for (let i = 0; i < 6; i++) {
+      await countdown(5);
+      capturePhoto();
+    }
+
+    setTimeout(() => {
+      setupSelectStep();
+      goToStep(2);
+    }, 1000);
+  }
+
+  function countdown(seconds) {
+    return new Promise(resolve => {
+      let count = seconds;
+      const countEl = document.getElementById('countdown');
+      countEl.innerText = count;
+
+      const timer = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countEl.innerText = count;
+        } else {
+          clearInterval(timer);
+          countEl.innerText = '';
+          resolve();
+        }
+      }, 1000);
+    });
+  }
+
+  function capturePhoto() {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = video.videoWidth;
+    tempCanvas.height = video.videoHeight;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    tempCtx.translate(tempCanvas.width, 0);
+    tempCtx.scale(-1, 1);
+    tempCtx.drawImage(video, 0, 0);
+
+    const dataUrl = tempCanvas.toDataURL('image/jpeg');
+    capturedPhotos.push(dataUrl);
+
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    document.getElementById('thumbPreview').appendChild(img);
+  }
+
+  function setupSelectStep() {
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = '';
+    selectedPhotos = [];
+    updateSelectState();
+
+    capturedPhotos.forEach((src, idx) => {
+      const item = document.createElement('div');
+      item.className = 'photo-item';
+      item.onclick = () => toggleSelectPhoto(idx, item);
+
+      const img = document.createElement('img');
+      img.src = src;
+      item.appendChild(img);
+      grid.appendChild(item);
+    });
+  }
+
+  function toggleSelectPhoto(idx, element) {
+    const existingIndex = selectedPhotos.indexOf(idx);
+    
+    if (existingIndex > -1) {
+      selectedPhotos.splice(existingIndex, 1);
+      element.classList.remove('selected');
+      if (element.querySelector('.badge')) element.querySelector('.badge').remove();
+    } else {
+      if (selectedPhotos.length < 4) {
+        selectedPhotos.push(idx);
+        element.classList.add('selected');
+        const badge = document.createElement('div');
+        badge.className = 'badge';
+        badge.innerText = selectedPhotos.length;
+        element.appendChild(badge);
+      }
+    }
+    updateSelectState();
+  }
+
+  function updateSelectState() {
+    document.getElementById('selectCount').innerText = selectedPhotos.length;
+    document.getElementById('nextToFrameBtn').disabled = selectedPhotos.length !== 4;
+    
+    const items = document.querySelectorAll('.photo-item');
+    items.forEach((item, idx) => {
+      const badge = item.querySelector('.badge');
+      const rank = selectedPhotos.indexOf(idx);
+      if (rank > -1) {
+        if (!badge) {
+          const newBadge = document.createElement('div');
+          newBadge.className = 'badge';
+          newBadge.innerText = rank + 1;
+          item.appendChild(newBadge);
+        } else {
+          badge.innerText = rank + 1;
+        }
+      }
+    });
+  }
+
+  function selectFrameColor(color) {
+    currentFrameColor = color;
+  }
+
+  function selectSticker(emoji) {
+    currentSticker = emoji;
+    document.querySelectorAll('.sticker-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.innerText === emoji);
+    });
+  }
+
+  function renderFinalCanvas() {
+    ctx.fillStyle = currentFrameColor;
+    ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+    const padding = 60;
+    const photoWidth = 1080;
+    const photoHeight = 360;
+    const gap = 30;
+
+    let loadedCount = 0;
+    selectedPhotos.forEach((photoIdx, i) => {
+      const img = new Image();
+      img.src = capturedPhotos[photoIdx];
+      img.onload = () => {
+        const yPos = padding + i * (photoHeight + gap);
+        ctx.drawImage(img, 0, 0, img.width, img.height, padding, yPos, photoWidth, photoHeight);
+        
+        loadedCount++;
+        if (loadedCount === 4) {
+          drawBrandText();
+          redrawCanvas();
+        }
+      };
+    });
+  }
+
+  function drawBrandText() {
+    ctx.fillStyle = currentFrameColor === '#000000' ? '#ffffff' : '#000000';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('LIFE FOUR CUTS', finalCanvas.width / 2, 1700);
+
+    const today = new Date();
+    const dateString = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}`;
+    ctx.font = '24px sans-serif';
+    ctx.fillText(dateString, finalCanvas.width / 2, 1750);
+  }
+
+  let isDrawingLine = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  finalCanvas.addEventListener('mousedown', (e) => {
+    const rect = finalCanvas.getBoundingClientRect();
+    const scaleX = finalCanvas.width / rect.width;
+    const scaleY = finalCanvas.height / rect.height;
+    lastX = (e.clientX - rect.left) * scaleX;
+    lastY = (e.clientY - rect.top) * scaleY;
+
+    if (currentSticker !== '') {
+      stickers.push({ text: currentSticker, x: lastX, y: lastY });
+      
+      // 스티커 도장 찍을 때 캔버스 전체를 지우고 새로고침 하던 현상을 수정
+      ctx.font = '80px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(currentSticker, lastX, lastY);
+      return;
+    }
+    
+    isDrawingLine = true;
+  });
+
+  finalCanvas.addEventListener('mousemove', (e) => {
+    if (!isDrawingLine || currentSticker !== '') return;
+    const rect = finalCanvas.getBoundingClientRect();
+    const scaleX = finalCanvas.width / rect.width;
+    const scaleY = finalCanvas.height / rect.height;
+    const currentX = (e.clientX - rect.left) * scaleX;
+    const currentY = (e.clientY - rect.top) * scaleY;
+
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(currentX, currentY);
+    ctx.strokeStyle = document.getElementById('brushColor').value;
+    ctx.lineWidth = 12;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    drawings.push({ x1: lastX, y1: lastY, x2: currentX, y2: currentY, color: ctx.strokeStyle });
+    lastX = currentX;
+    lastY = currentY;
+  });
+
+  finalCanvas.addEventListener('mouseup', () => isDrawingLine = false);
+
+  function clearDrawings() {
+    drawings = [];
+    stickers = [];
+    renderFinalCanvas();
+  }
+
+  function redrawCanvas() {
+    drawings.forEach(d => {
+      ctx.beginPath();
+      ctx.moveTo(d.x1, d.y1);
+      ctx.lineTo(d.x2, d.y2);
+      ctx.strokeStyle = d.color;
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    });
+
+    stickers.forEach(s => {
+      ctx.font = '80px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.text, s.x, s.y);
+    });
+  }
+
+  function downloadImage() {
+    const link = document.createElement('a');
+    link.download = `lifecut_4x6_${Date.now()}.png`;
+    link.href = finalCanvas.toDataURL('image/png', 1.0);
+    link.click();
+  }
+</script>
+</body>
+</html>
