@@ -33,7 +33,7 @@
 
     /* 3단계: 프레임 선택 */
     .color-options { display: flex; gap: 12px; justify-content: center; margin: 20px 0; flex-wrap: wrap; }
-    .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ccc; cursor: pointer; }
+    .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
 
     /* 4단계: 꾸미기 & 프레임 미리보기 */
     .canvas-container { margin: 15px auto; max-width: 360px; }
@@ -48,6 +48,7 @@
 <body>
 
 <div class="container">
+  <!-- 1. 촬영 단계 -->
   <div id="step-1" class="step active">
     <h2>📸 사진 촬영 (총 6장)</h2>
     <div class="camera-box">
@@ -58,15 +59,21 @@
     <button id="startBtn" onclick="startShooting()">촬영 시작 (5초 카운트다운)</button>
   </div>
 
+  <!-- 2. 사진 선택 단계 -->
   <div id="step-2" class="step">
     <h2>4장의 사진을 선택해주세요 (<span id="selectCount">0</span>/4)</h2>
     <div class="photo-grid" id="photoGrid"></div>
     <button id="nextToFrameBtn" disabled onclick="goToStep(3)">프레임 선택하기</button>
   </div>
 
+  <!-- 3. 프레임 선택 단계 -->
   <div id="step-3" class="step">
     <h2>🎨 프레임 색상 선택</h2>
     <div class="color-options">
+      <!-- 할로윈 프레임 옵션 추가 -->
+      <div class="color-btn" style="background: #ff7518;" onclick="selectFrameColor('#ff7518')" title="주황 호박 컨셉">🎃</div>
+      <div class="color-btn" style="background: #2c003e;" onclick="selectFrameColor('#2c003e')" title="검정 보라 귀신 컨셉">👻</div>
+      <!-- 기존 프레임 옵션 -->
       <div class="color-btn" style="background: #ffffff;" onclick="selectFrameColor('#ffffff')"></div>
       <div class="color-btn" style="background: #000000;" onclick="selectFrameColor('#000000')"></div>
       <div class="color-btn" style="background: #ffb6c1;" onclick="selectFrameColor('#ffb6c1')"></div>
@@ -81,6 +88,7 @@
     <button onclick="goToStep(4)">꾸미기로 이동</button>
   </div>
 
+  <!-- 4. 꾸미기 & 완성 단계 -->
   <div id="step-4" class="step">
     <h2>✏️ 사진 꾸미기</h2>
     <div class="canvas-container">
@@ -261,7 +269,6 @@
     });
   }
 
-  // 4x6 사이즈에 똑같은 네컷 프레임 2개를 좌우로 배치하는 랜더링 로직
   function renderFinalCanvas() {
     ctx.fillStyle = currentFrameColor;
     ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
@@ -278,9 +285,7 @@
       img.onload = () => {
         const yPos = startY + i * (photoHeight + gap);
         
-        // 왼쪽 프레임 사진 배치
         ctx.drawImage(img, 0, 0, img.width, img.height, 35, yPos, photoWidth, photoHeight);
-        // 오른쪽 프레임 사진 배치 (동일한 4컷 사진)
         ctx.drawImage(img, 0, 0, img.width, img.height, 635, yPos, photoWidth, photoHeight);
         
         loadedCount++;
@@ -294,15 +299,14 @@
 
   function drawBrandText() {
     const brandText = document.getElementById('brandTextInput').value || '퍼즐네컷';
-    ctx.fillStyle = currentFrameColor === '#000000' ? '#ffffff' : '#000000';
+    // 어두운 배경(검정, 귀신 보라 등)일 경우 흰색 글자로 자동 변경
+    ctx.fillStyle = (currentFrameColor === '#000000' || currentFrameColor === '#2c003e') ? '#ffffff' : '#000000';
     ctx.font = 'bold 38px sans-serif';
     ctx.textAlign = 'center';
 
-    // 왼쪽 / 오른쪽 각각 문구 배치
     ctx.fillText(brandText, 300, 1600);
     ctx.fillText(brandText, 900, 1600);
 
-    // 날짜 자동 기록
     const today = new Date();
     const dateString = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}`;
     ctx.font = '22px sans-serif';
