@@ -70,10 +70,10 @@
   <div id="step-3" class="step">
     <h2>🎨 프레임 색상 선택</h2>
     <div class="color-options">
-      <!-- 할로윈 프레임 옵션 추가 -->
-      <div class="color-btn" style="background: #ff7518;" onclick="selectFrameColor('#ff7518')" title="주황 호박 컨셉">🎃</div>
-      <div class="color-btn" style="background: #2c003e;" onclick="selectFrameColor('#2c003e')" title="검정 보라 귀신 컨셉">👻</div>
-      <!-- 기존 프레임 옵션 -->
+      <!-- 할로윈 무늬 프레임 옵션 -->
+      <div class="color-btn" style="background: #ff7518;" onclick="selectFrameColor('#ff7518')" title="주황 호박 무늬 컨셉">🎃</div>
+      <div class="color-btn" style="background: #2c003e;" onclick="selectFrameColor('#2c003e')" title="검정/보라 유령+거미줄 무늬 컨셉">👻</div>
+      <!-- 기존 단색 프레임 옵션 -->
       <div class="color-btn" style="background: #ffffff;" onclick="selectFrameColor('#ffffff')"></div>
       <div class="color-btn" style="background: #000000;" onclick="selectFrameColor('#000000')"></div>
       <div class="color-btn" style="background: #ffb6c1;" onclick="selectFrameColor('#ffb6c1')"></div>
@@ -269,9 +269,51 @@
     });
   }
 
+  // 프레임 무늬 그리기 함수
+  function drawBackgroundPattern() {
+    if (currentFrameColor === '#ff7518') {
+      // 1. 주황색 -> 호박 무늬
+      ctx.save();
+      ctx.font = '36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.35; // 패턴 투명도
+      
+      for (let x = 50; x < finalCanvas.width; x += 100) {
+        for (let y = 50; y < finalCanvas.height; y += 100) {
+          let offsetX = (Math.floor(y / 100) % 2 === 0) ? 0 : 50;
+          ctx.fillText('🎃', x + offsetX, y);
+        }
+      }
+      ctx.restore();
+    } else if (currentFrameColor === '#2c003e') {
+      // 2. 검정/보라 -> 유령 + 거미줄 무늬
+      ctx.save();
+      ctx.font = '36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.35; // 패턴 투명도
+      
+      for (let x = 60; x < finalCanvas.width; x += 120) {
+        for (let y = 60; y < finalCanvas.height; y += 120) {
+          let row = Math.floor(y / 120);
+          let col = Math.floor(x / 120);
+          let emoji = (row + col) % 2 === 0 ? '👻' : '🕸️';
+          let offsetX = (row % 2 === 0) ? 0 : 60;
+          ctx.fillText(emoji, x + offsetX, y);
+        }
+      }
+      ctx.restore();
+    }
+  }
+
   function renderFinalCanvas() {
+    // 배경색 채우기
     ctx.fillStyle = currentFrameColor;
     ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+    // 할로윈 배경 무늬 그리기
+    drawBackgroundPattern();
 
     const photoWidth = 530;
     const photoHeight = 330;
@@ -299,7 +341,6 @@
 
   function drawBrandText() {
     const brandText = document.getElementById('brandTextInput').value || '퍼즐네컷';
-    // 어두운 배경(검정, 귀신 보라 등)일 경우 흰색 글자로 자동 변경
     ctx.fillStyle = (currentFrameColor === '#000000' || currentFrameColor === '#2c003e') ? '#ffffff' : '#000000';
     ctx.font = 'bold 38px sans-serif';
     ctx.textAlign = 'center';
