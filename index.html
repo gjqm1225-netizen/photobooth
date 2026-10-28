@@ -40,7 +40,7 @@
     canvas { width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: crosshair; }
     .tools { margin-top: 10px; display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
     
-    .sticker-options { display: flex; gap: 10px; justify-content: center; margin-top: 10px; font-size: 24px; }
+    .sticker-options { display: flex; gap: 10px; justify-content: center; margin-top: 10px; font-size: 24px; flex-wrap: wrap; }
     .sticker-btn { cursor: pointer; padding: 4px; border: 2px solid transparent; border-radius: 4px; transition: 0.2s; }
     .sticker-btn.active { border-color: #ff4757; background: #ffeaa7; }
   </style>
@@ -70,10 +70,9 @@
   <div id="step-3" class="step">
     <h2>🎨 프레임 색상 선택</h2>
     <div class="color-options">
-      <!-- 할로윈 무늬 프레임 옵션 -->
-      <div class="color-btn" style="background: #ff7518;" onclick="selectFrameColor('#ff7518')" title="주황 호박 무늬 컨셉">🎃</div>
-      <div class="color-btn" style="background: #2c003e;" onclick="selectFrameColor('#2c003e')" title="검정/보라 유령+거미줄 무늬 컨셉">👻</div>
-      <!-- 기존 단색 프레임 옵션 -->
+      <!-- 프레임 색상 옵션 -->
+      <div class="color-btn" style="background: #ff7518;" onclick="selectFrameColor('#ff7518')" title="주황 컨셉">🎃</div>
+      <div class="color-btn" style="background: #2c003e;" onclick="selectFrameColor('#2c003e')" title="검정/보라 컨셉">👻</div>
       <div class="color-btn" style="background: #ffffff;" onclick="selectFrameColor('#ffffff')"></div>
       <div class="color-btn" style="background: #000000;" onclick="selectFrameColor('#000000')"></div>
       <div class="color-btn" style="background: #ffb6c1;" onclick="selectFrameColor('#ffb6c1')"></div>
@@ -99,6 +98,7 @@
       <label>하단 문구: <input type="text" id="brandTextInput" value="퍼즐네컷" oninput="renderFinalCanvas()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; width: 110px;"></label>
       <button onclick="clearDrawings()" style="padding: 6px 12px; font-size: 14px; margin-top: 0;">꾸미기 초기화</button>
     </div>
+    <!-- 할로윈 스티커(🎃, 👻, 🕸️) 추가 -->
     <div class="sticker-options">
       <span class="sticker-btn" onclick="selectSticker('⭐')">⭐</span>
       <span class="sticker-btn" onclick="selectSticker('❤️')">❤️</span>
@@ -106,6 +106,9 @@
       <span class="sticker-btn" onclick="selectSticker('🌸')">🌸</span>
       <span class="sticker-btn" onclick="selectSticker('🎀')">🎀</span>
       <span class="sticker-btn" onclick="selectSticker('✨')">✨</span>
+      <span class="sticker-btn" onclick="selectSticker('🎃')">🎃</span>
+      <span class="sticker-btn" onclick="selectSticker('👻')">👻</span>
+      <span class="sticker-btn" onclick="selectSticker('🕸️')">🕸️</span>
     </div>
     <p style="font-size: 12px; color: #666; margin-top: 8px;">* 스티커를 선택하고 사진을 클릭하면 도장이 찍힙니다.</p>
     
@@ -269,51 +272,10 @@
     });
   }
 
-  // 선명한 프레임 무늬 그리기 함수
-  function drawBackgroundPattern() {
-    if (currentFrameColor === '#ff7518') {
-      // 1. 주황색 -> 크고 선명한 호박 무늬 (80px)
-      ctx.save();
-      ctx.font = '70px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.globalAlpha = 0.7; // 패턴 선명도 강화
-      
-      for (let x = 70; x < finalCanvas.width; x += 140) {
-        for (let y = 70; y < finalCanvas.height; y += 140) {
-          let offsetX = (Math.floor(y / 140) % 2 === 0) ? 0 : 70;
-          ctx.fillText('🎃', x + offsetX, y);
-        }
-      }
-      ctx.restore();
-    } else if (currentFrameColor === '#2c003e') {
-      // 2. 검정/보라 -> 크고 선명한 유령 + 거미줄 무늬 (70px)
-      ctx.save();
-      ctx.font = '70px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.globalAlpha = 0.7;
-      
-      for (let x = 70; x < finalCanvas.width; x += 140) {
-        for (let y = 70; y < finalCanvas.height; y += 140) {
-          let row = Math.floor(y / 140);
-          let col = Math.floor(x / 140);
-          let emoji = (row + col) % 2 === 0 ? '👻' : '🕸️';
-          let offsetX = (row % 2 === 0) ? 0 : 70;
-          ctx.fillText(emoji, x + offsetX, y);
-        }
-      }
-      ctx.restore();
-    }
-  }
-
   function renderFinalCanvas() {
-    // 배경색 채우기
+    // 단색 배경 채우기
     ctx.fillStyle = currentFrameColor;
     ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-
-    // 할로윈 배경 무늬 그리기
-    drawBackgroundPattern();
 
     const photoWidth = 530;
     const photoHeight = 330;
